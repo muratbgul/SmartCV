@@ -10,17 +10,48 @@ const nlp = require('compromise');
 const app = express();
 const port = 5000;
 
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'), false);
+    }
+  }
+});
 
 app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
   console.log('Received upload-pdf request.');
+  
+  // Handle multer errors
+  if (req.fileValidationError) {
+    return res.status(400).json({ error: req.fileValidationError });
+  }
+  
   if (!req.file) {
     console.log('No PDF file uploaded.');
     return res.status(400).json({ error: 'No PDF file uploaded.' });
+  }
+
+  // Additional file size check
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  if (req.file.size > MAX_FILE_SIZE) {
+    return res.status(400).json({ 
+      error: 'File too large',
+      message: `File size exceeds maximum allowed size of ${MAX_FILE_SIZE / (1024 * 1024)}MB`
+    });
   }
 
   console.log(`File received: ${req.file.originalname}, size: ${req.file.size} bytes, mimetype: ${req.file.mimetype}`);
@@ -88,9 +119,22 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
         }
     }
 
-    const skillsKeywords = ['HTML', 'CSS', 'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Angular', 'Next.js', 'Tailwind', 'Bootstrap'];
+    const skillsKeywords = [
+      'HTML', 'HTML5', 'CSS', 'CSS3', 'JavaScript', 'TypeScript', 'React', 'React.js',
+      'Node.js', 'Python', 'Angular', 'Next.js', 'Tailwind', 'Bootstrap', 'Vue.js',
+      'Vue', 'Express', 'Express.js', 'MongoDB', 'PostgreSQL', 'MySQL', 'SQL',
+      'Git', 'GitHub', 'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Firebase',
+      'Redux', 'MobX', 'GraphQL', 'REST', 'API', 'Jest', 'Testing', 'JUnit',
+      'Selenium', 'Cypress', 'Webpack', 'Vite', 'NPM', 'Yarn', 'Linux', 'Unix',
+      'Java', 'C++', 'C#', '.NET', 'PHP', 'Ruby', 'Go', 'Rust', 'Swift', 'Kotlin',
+      'Django', 'Flask', 'Spring', 'Laravel', 'Rails', 'TensorFlow', 'PyTorch',
+      'Machine Learning', 'AI', 'Deep Learning', 'Data Science', 'Pandas', 'NumPy',
+      'Scikit-learn', 'Tableau', 'Power BI', 'Excel', 'Agile', 'Scrum', 'DevOps',
+      'CI/CD', 'Jenkins', 'Travis CI', 'CircleCI', 'GitLab CI', 'Microservices',
+      'Serverless', 'Lambda', 'S3', 'EC2', 'RDS', 'DynamoDB', 'Redis', 'Elasticsearch'
+    ];
     const extractedSkills = skillsKeywords.filter(keyword =>
-      new RegExp(`\\b${keyword}\\b`, 'i').test(fullText)
+      new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(fullText)
     );
 
     // Yeni deneyim ve eğitim ayrıştırma mantığı (satır satır işleme)
@@ -186,11 +230,39 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
   } catch (error) {
     console.error('Error parsing PDF in backend (pdfjs-dist):', error);
     const errorMessage = error.message || 'An unknown error occurred while parsing the PDF';
-    res.status(500).json({ 
+    
+    // More specific error messages
+    let statusCode = 500;
+    if (errorMessage.includes('Invalid PDF') || errorMessage.includes('corrupted')) {
+      statusCode = 400;
+    }
+    
+    res.status(statusCode).json({ 
       error: 'Error parsing PDF',
       message: errorMessage 
     });
   }
+}, (error, req, res, next) => {
+  // Multer error handler
+  if (error instanceof multer.MulterError) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ 
+        error: 'File too large',
+        message: 'File size exceeds maximum allowed size of 10MB'
+      });
+    }
+    return res.status(400).json({ 
+      error: 'File upload error',
+      message: error.message 
+    });
+  }
+  if (error) {
+    return res.status(400).json({ 
+      error: 'File validation error',
+      message: error.message 
+    });
+  }
+  next();
 });
 
 /**
@@ -198,79 +270,102 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
  */
 const buildPrompt = (parsedData) => {
   const { name, email, phone, skills, experience, education, rawText } = parsedData;
-  return `
-You are an expert career coach and CV reviewer. Analyze the following CV content and return structured JSON that exactly matches this TypeScript type:
+  // Limit text length to avoid token limits
+  const limitedText = rawText.substring(0, 8000);
+  const limitedExperience = experience ? experience.substring(0, 2000) : 'Not found';
+  const limitedEducation = education ? education.substring(0, 1000) : 'Not found';
+  
+  return `You are an expert career coach and CV reviewer. Analyze the following CV content and return ONLY valid JSON (no markdown, no code blocks, no explanations) that matches this exact structure:
+
 {
-  "summary": string,
-  "missingSections": string[],
-  "suggestions": string[],
+  "summary": "Brief 2-3 sentence summary of the CV analysis",
+  "missingSections": ["section1", "section2"],
+  "suggestions": ["suggestion1", "suggestion2", "suggestion3"],
   "scoring": {
-    "structure": { "score": number, "reason": string },
-    "language": { "score": number, "reason": string },
-    "relevance": { "score": number, "reason": string },
-    "technical": { "score": number, "reason": string },
-    "clarity": { "score": number, "reason": string }
+    "structure": { "score": 75, "reason": "reason text" },
+    "language": { "score": 80, "reason": "reason text" },
+    "relevance": { "score": 70, "reason": "reason text" },
+    "technical": { "score": 75, "reason": "reason text" },
+    "clarity": { "score": 80, "reason": "reason text" }
   },
   "interviewQuestions": {
-    "technical": string[],
-    "behavioral": string[],
-    "roleSpecific": string[]
+    "technical": ["question1", "question2", "question3", "question4", "question5", "question6", "question7"],
+    "behavioral": ["question1", "question2", "question3", "question4", "question5", "question6", "question7"],
+    "roleSpecific": ["question1", "question2", "question3", "question4", "question5", "question6", "question7"]
   }
 }
 
+CRITICAL: Return ONLY the JSON object. No markdown, no code blocks, no text before or after.
+
 Guidelines:
-- Scores are 0-100 integers.
-- Give concise, actionable reasons and suggestions.
-- Tailor questions to the candidate profile and likely target roles.
+- Scores are 0-100 integers
+- Generate 5-7 questions per category
+- Make questions specific to this candidate's background
+- Base analysis on the actual CV content provided
 
-Extracted fields:
-- Name: ${name || 'Not found'}
-- Email: ${email || 'Not found'}
-- Phone: ${phone || 'Not found'}
-- Skills: ${skills && skills.length ? skills.join(', ') : 'Not found'}
-- Experience: ${experience || 'Not found'}
-- Education: ${education || 'Not found'}
+Candidate Info:
+Name: ${name || 'Not found'}
+Email: ${email || 'Not found'}
+Phone: ${phone || 'Not found'}
+Skills: ${skills && skills.length ? skills.join(', ') : 'Not found'}
+Experience: ${limitedExperience}
+Education: ${limitedEducation}
 
-Full CV text:
-${rawText}
-`;
+CV Content:
+${limitedText}`;
 };
 
 /**
  * Fallback mock response when GEMINI_API_KEY is not provided.
  */
 const mockAnalysis = () => ({
-  summary: 'Temel kontrol: PDF başarıyla okundu, örnek analiz döndürülüyor.',
+  summary: 'Basic check: PDF successfully read, returning sample analysis.',
   missingSections: ['Projects', 'Certifications'],
   suggestions: [
-    'Experience bölümlerinde ölçülebilir çıktılar ekleyin (örn. %25 performans artışı).',
-    'Teknik becerileri seviyeleriyle listeleyin (Beginner/Intermediate/Advanced).',
-    'Eğitim bölümüne tarih ve derece bilgisi ekleyin.'
+    'Add measurable outcomes in Experience sections (e.g., 25% performance increase).',
+    'List technical skills with proficiency levels (Beginner/Intermediate/Advanced).',
+    'Add dates and degree information to the Education section.'
   ],
   scoring: {
-    structure: { score: 72, reason: 'Başlıklar mevcut, ancak format tutarlılığı iyileştirilebilir.' },
-    language: { score: 78, reason: 'Dil anlaşılır, bazı cümleler sadeleştirilebilir.' },
-    relevance: { score: 75, reason: 'Hedef role uygunluk orta seviyede; projeler eklenmeli.' },
-    technical: { score: 70, reason: 'Temel beceriler var, teknolojiler için detay eksik.' },
-    clarity: { score: 80, reason: 'Bilgiler okunabilir, madde işaretleri yeterli.' }
+    structure: { score: 72, reason: 'Headers are present, but format consistency can be improved.' },
+    language: { score: 78, reason: 'Language is clear, some sentences can be simplified.' },
+    relevance: { score: 75, reason: 'Relevance to target role is moderate; projects should be added.' },
+    technical: { score: 70, reason: 'Basic skills are present, details for technologies are missing.' },
+    clarity: { score: 80, reason: 'Information is readable, bullet points are sufficient.' }
   },
   interviewQuestions: {
     technical: [
-      'Recent projelerinde React performans optimizasyonlarını nasıl uyguladın?',
-      'Node.js API tasarımında hata yönetimi ve logging stratejin nedir?'
+      'How did you implement React performance optimizations in your recent projects?',
+      'What is your strategy for error handling and logging in Node.js API design?',
+      'Can you explain your approach to database optimization and query performance?',
+      'How do you handle state management in large-scale applications?',
+      'What testing strategies do you use to ensure code quality?',
+      'How do you approach API design and RESTful principles?',
+      'Can you describe your experience with version control and Git workflows?'
     ],
     behavioral: [
-      'Zorlayıcı bir deadline’da ekibinle nasıl çalıştın?',
-      'Bir hatayı erken fark edip çözdüğün bir örnek anlatır mısın?'
+      'How did you work with your team under a challenging deadline?',
+      'Can you give an example of when you caught and fixed an error early?',
+      'Describe a situation where you had to learn a new technology quickly.',
+      'Tell me about a time when you had to explain a complex technical concept to a non-technical person.',
+      'How do you handle conflicting priorities when working on multiple projects?',
+      'Can you share an example of how you improved a process or workflow?',
+      'Describe a challenging project and how you overcame obstacles.'
     ],
     roleSpecific: [
-      'Pozisyona uygun olarak CI/CD sürecini nasıl kurarsın?',
-      'Ölçeklenebilir frontend mimarisi için hangi patternleri tercih edersin?'
+      'How would you set up a CI/CD process suitable for this position?',
+      'What patterns do you prefer for scalable frontend architecture?',
+      'How would you approach code reviews and maintain code quality standards?',
+      'What is your strategy for handling production incidents and debugging?',
+      'How do you stay updated with the latest technologies and industry trends?',
+      'Can you describe your approach to working with cross-functional teams?',
+      'What methodologies do you follow for project planning and delivery?'
     ]
   }
 });
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+console.log('🔑 GEMINI_API_KEY check:', GEMINI_API_KEY ? `✅ Found (${GEMINI_API_KEY.substring(0, 10)}...)` : '❌ Not found');
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
 // Test endpoint to list available models
@@ -302,45 +397,93 @@ app.post('/analyze-cv', async (req, res) => {
 
     // If no API key, return mock analysis so the UI can still function.
     if (!genAI) {
-      console.warn('GEMINI_API_KEY not set. Returning mock analysis.');
+      console.warn('⚠️ GEMINI_API_KEY not set. Returning mock analysis.');
+      console.warn('To use real AI analysis, set GEMINI_API_KEY in .env file');
       return res.json({ analysis: mockAnalysis(), source: 'mock' });
     }
 
+    console.log('✅ Gemini API initialized, attempting to analyze CV...');
+
     // Try multiple model names, fallback to mock if all fail
-    const modelNames = ['gemini-pro', 'gemini-1.0-pro', 'gemini-1.5-pro'];
+    // Updated model names - gemini-pro is deprecated, use gemini-1.5 models
+    const modelNames = ['gemini-1.5-flash', 'gemini-1.5-pro'];
     let text = null;
     let lastError = null;
     
     for (const modelName of modelNames) {
       try {
+        console.log(`🔄 Attempting to use model: ${modelName}`);
         const model = genAI.getGenerativeModel({ model: modelName });
         const prompt = buildPrompt(parsedData);
+        console.log('📤 Sending request to Gemini API...');
         const result = await model.generateContent(prompt);
         text = result.response.text();
-        console.log(`Successfully used model: ${modelName}`);
+        console.log(`✅ Successfully used model: ${modelName}`);
+        console.log('📊 Gemini response length:', text.length, 'characters');
         break; // Success, exit loop
       } catch (err) {
         lastError = err;
-        console.warn(`Model ${modelName} failed:`, err.message);
+        console.warn(`❌ Model ${modelName} failed:`, err.message);
+        if (err.status) {
+          console.warn(`   HTTP Status:`, err.status);
+        }
+        if (err.statusText) {
+          console.warn(`   Status Text:`, err.statusText);
+        }
+        if (err.stack) {
+          console.warn(`   Stack (first 300 chars):`, err.stack.substring(0, 300));
+        }
         continue;
+      }
+    }
+    
+    // If all named models failed, try default model (no name specified)
+    if (!text) {
+      try {
+        console.log('🔄 Trying default model (no name specified)...');
+        const defaultModel = genAI.getGenerativeModel();
+        const prompt = buildPrompt(parsedData);
+        const result = await defaultModel.generateContent(prompt);
+        text = result.response.text();
+        console.log(`✅ Successfully used default model`);
+        console.log('📊 Gemini response length:', text.length, 'characters');
+      } catch (err) {
+        console.warn('❌ Default model also failed:', err.message);
+        lastError = err;
       }
     }
     
     // If all models failed, return mock analysis
     if (!text) {
-      console.warn('All Gemini models failed, using mock analysis. Error:', lastError?.message);
-      return res.json({ analysis: mockAnalysis(), source: 'fallback-mock' });
+      console.error('❌ All Gemini models failed, using mock analysis.');
+      console.error('Last error message:', lastError?.message);
+      console.error('Last error status:', lastError?.status);
+      if (lastError) {
+        console.error('Last error full:', JSON.stringify(lastError, Object.getOwnPropertyNames(lastError), 2));
+      }
+      return res.json({ 
+        analysis: mockAnalysis(), 
+        source: 'fallback-mock',
+        error: lastError?.message || 'Unknown error',
+        debug: {
+          apiKeySet: !!GEMINI_API_KEY,
+          apiKeyLength: GEMINI_API_KEY?.length || 0,
+          modelsTried: modelNames
+        }
+      });
     }
 
     let parsed;
     try {
       parsed = JSON.parse(text);
+      console.log('✅ Successfully parsed Gemini response');
+      console.log('Analysis summary:', parsed.summary?.substring(0, 100));
+      return res.json({ analysis: parsed, source: 'gemini' });
     } catch (err) {
-      console.error('Failed to parse Gemini response, returning mock.', err);
+      console.error('❌ Failed to parse Gemini response, returning mock.', err);
+      console.error('Raw response:', text?.substring(0, 500));
       return res.json({ analysis: mockAnalysis(), source: 'fallback-parse' });
     }
-
-    return res.json({ analysis: parsed, source: 'gemini' });
   } catch (error) {
     console.error('Error during AI analysis:', error);
     // Return mock instead of error, so UI still works

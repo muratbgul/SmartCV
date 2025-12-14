@@ -4,7 +4,7 @@ import PdfUpload from '@/src/components/PdfUpload';
 export default function Home() {
   return (
     <MainLayout>
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-50rem)]">
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] py-8">
         <PdfUpload />
       </div>
     </MainLayout>

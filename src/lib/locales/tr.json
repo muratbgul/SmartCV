@@ -1,0 +1,59 @@
+{
+  "header": {
+    "title": "SmartCV",
+    "subtitle": "AI Destekli Özgeçmiş Analizcisi"
+  },
+  "upload": {
+    "dragDrop": "PDF dosyasını buraya sürükleyip bırakın veya seçmek için tıklayın",
+    "dropHere": "PDF dosyasını buraya bırakın...",
+    "processing": "PDF işleniyor... Lütfen bekleyin",
+    "maxSize": "Maksimum dosya boyutu: {size}",
+    "onlyPdf": "Sadece PDF dosyaları kabul edilir (maks {size})",
+    "success": "✓ CV başarıyla yüklendi ve analiz ediliyor...",
+    "fileRejected": "Dosya Reddedildi:"
+  },
+  "cvData": {
+    "title": "Çıkarılan CV Verileri:",
+    "name": "İsim",
+    "email": "E-posta",
+    "phone": "Telefon",
+    "skills": "Beceriler",
+    "experience": "Deneyim",
+    "education": "Eğitim",
+    "rawText": "Ham Metin",
+    "showRawText": "Ham Metni Göster",
+    "hideRawText": "Ham Metni Gizle",
+    "notFound": "Bulunamadı",
+    "noSkills": "Beceri tespit edilmedi"
+  },
+  "analysis": {
+    "analyzing": "AI analizi yapılıyor...",
+    "summary": "AI Özeti",
+    "missingSections": "Eksik Bölümler",
+    "suggestions": "Öneriler",
+    "scoring": "CV Puanlama",
+    "interviewQuestions": "Mülakat Soruları",
+    "technical": "Teknik",
+    "behavioral": "Davranışsal",
+    "roleSpecific": "Rol Özel"
+  },
+  "error": {
+    "title": "Hata:",
+    "uploadFailed": "PDF yükleme başarısız",
+    "analysisFailed": "AI analizi başarısız",
+    "invalidFileType": "Geçersiz dosya tipi. Lütfen bir PDF dosyası yükleyin.",
+    "fileTooLarge": "Dosya boyutu çok büyük. Maksimum boyut {size}."
+  },
+  "footer": {
+    "copyright": "© 2025 SmartCV. Tüm hakları saklıdır."
+  },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe"
+  },
+  "common": {
+    "back": "Yüklemeye Dön",
+    "uploadNew": "Yeni CV Yükle"
+  }
+}
+

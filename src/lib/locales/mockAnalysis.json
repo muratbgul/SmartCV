@@ -1,0 +1,93 @@
+{
+  "en": {
+    "summary": "Basic check: PDF successfully read, returning sample analysis.",
+    "missingSections": ["Projects", "Certifications"],
+    "suggestions": [
+      "Add measurable outcomes in Experience sections (e.g., 25% performance increase).",
+      "List technical skills with proficiency levels (Beginner/Intermediate/Advanced).",
+      "Add dates and degree information to the Education section."
+    ],
+    "scoring": {
+      "structure": { "score": 72, "reason": "Headers are present, but format consistency can be improved." },
+      "language": { "score": 78, "reason": "Language is clear, some sentences can be simplified." },
+      "relevance": { "score": 75, "reason": "Relevance to target role is moderate; projects should be added." },
+      "technical": { "score": 70, "reason": "Basic skills are present, details for technologies are missing." },
+      "clarity": { "score": 80, "reason": "Information is readable, bullet points are sufficient." }
+    },
+    "interviewQuestions": {
+      "technical": [
+        "How did you implement React performance optimizations in your recent projects?",
+        "What is your strategy for error handling and logging in Node.js API design?",
+        "Can you explain your approach to database optimization and query performance?",
+        "How do you handle state management in large-scale applications?",
+        "What testing strategies do you use to ensure code quality?",
+        "How do you approach API design and RESTful principles?",
+        "Can you describe your experience with version control and Git workflows?"
+      ],
+      "behavioral": [
+        "How did you work with your team under a challenging deadline?",
+        "Can you give an example of when you caught and fixed an error early?",
+        "Describe a situation where you had to learn a new technology quickly.",
+        "Tell me about a time when you had to explain a complex technical concept to a non-technical person.",
+        "How do you handle conflicting priorities when working on multiple projects?",
+        "Can you share an example of how you improved a process or workflow?",
+        "Describe a challenging project and how you overcame obstacles."
+      ],
+      "roleSpecific": [
+        "How would you set up a CI/CD process suitable for this position?",
+        "What patterns do you prefer for scalable frontend architecture?",
+        "How would you approach code reviews and maintain code quality standards?",
+        "What is your strategy for handling production incidents and debugging?",
+        "How do you stay updated with the latest technologies and industry trends?",
+        "Can you describe your approach to working with cross-functional teams?",
+        "What methodologies do you follow for project planning and delivery?"
+      ]
+    }
+  },
+  "tr": {
+    "summary": "Temel kontrol: PDF başarıyla okundu, örnek analiz döndürülüyor.",
+    "missingSections": ["Projeler", "Sertifikalar"],
+    "suggestions": [
+      "Experience bölümlerinde ölçülebilir çıktılar ekleyin (örn. %25 performans artışı).",
+      "Teknik becerileri seviyeleriyle listeleyin (Beginner/Intermediate/Advanced).",
+      "Eğitim bölümüne tarih ve derece bilgisi ekleyin."
+    ],
+    "scoring": {
+      "structure": { "score": 72, "reason": "Başlıklar mevcut, ancak format tutarlılığı iyileştirilebilir." },
+      "language": { "score": 78, "reason": "Dil anlaşılır, bazı cümleler sadeleştirilebilir." },
+      "relevance": { "score": 75, "reason": "Hedef role uygunluk orta seviyede; projeler eklenmeli." },
+      "technical": { "score": 70, "reason": "Temel beceriler var, teknolojiler için detay eksik." },
+      "clarity": { "score": 80, "reason": "Bilgiler okunabilir, madde işaretleri yeterli." }
+    },
+    "interviewQuestions": {
+      "technical": [
+        "Recent projelerinde React performans optimizasyonlarını nasıl uyguladın?",
+        "Node.js API tasarımında hata yönetimi ve logging stratejin nedir?",
+        "Veritabanı optimizasyonu ve sorgu performansı için yaklaşımını açıklar mısın?",
+        "Büyük ölçekli uygulamalarda state management'ı nasıl yönetiyorsun?",
+        "Kod kalitesini sağlamak için hangi test stratejilerini kullanıyorsun?",
+        "API tasarımı ve RESTful prensiplere yaklaşımın nedir?",
+        "Version control ve Git workflow'larındaki deneyimini anlatır mısın?"
+      ],
+      "behavioral": [
+        "Zorlayıcı bir deadline'da ekibinle nasıl çalıştın?",
+        "Bir hatayı erken fark edip çözdüğün bir örnek anlatır mısın?",
+        "Hızlıca yeni bir teknoloji öğrenmek zorunda kaldığın bir durumu anlat.",
+        "Karmaşık bir teknik konsepti teknik olmayan birine açıkladığın bir zamanı anlat.",
+        "Birden fazla projede çalışırken çakışan öncelikleri nasıl yönetiyorsun?",
+        "Bir süreç veya iş akışını nasıl iyileştirdiğine dair bir örnek paylaşır mısın?",
+        "Zorlu bir projeyi ve engelleri nasıl aştığını anlat."
+      ],
+      "roleSpecific": [
+        "Pozisyona uygun olarak CI/CD sürecini nasıl kurarsın?",
+        "Ölçeklenebilir frontend mimarisi için hangi patternleri tercih edersin?",
+        "Code review'lere ve kod kalite standartlarını korumaya yaklaşımın nedir?",
+        "Production incident'leri ve debugging için stratejin nedir?",
+        "En son teknolojiler ve endüstri trendleriyle nasıl güncel kalıyorsun?",
+        "Cross-functional takımlarla çalışma yaklaşımını açıklar mısın?",
+        "Proje planlama ve teslimat için hangi metodolojileri takip ediyorsun?"
+      ]
+    }
+  }
+}
+

@@ -4,15 +4,36 @@ SmartCV is a web application that analyzes CV/Resume PDF files using AI-powered 
 
 ## Features
 
-- 📄 **PDF Upload**: Drag and drop or click to upload PDF resumes (success message on upload)
+- 📄 **PDF Upload**: 
+  - Drag and drop or click to upload PDF resumes
+  - File size validation (max 10MB)
+  - Success notifications
+  - Real-time error handling
+  
 - 🤖 **AI-Powered Analysis (Gemini)**:
   - Detects missing sections (Skills, Experience, Formatting, etc.)
   - Gives actionable improvement suggestions
-  - Scores the CV on Structure, Language, Relevance, Technical, Clarity
+  - Scores the CV on Structure, Language, Relevance, Technical, Clarity (0-100 scale with visual progress bars)
   - Generates Technical, Behavioral, and Role-Specific interview questions
-- 🧠 **Extraction**: Name, contact info, skills, experience, education, raw text
-- 🎨 **Modern UI**: Next.js + Tailwind, clean header/footer and result sections
-- ⚡ **Fast Processing**: Quick PDF parsing; mock AI responses available if API key is missing
+  - Fallback to mock analysis if API key is not configured
+  
+- 🧠 **Smart Extraction**: 
+  - Name, email, phone number detection
+  - 50+ technical skills recognition
+  - Experience and education section parsing
+  - Collapsible raw text view for performance
+  
+- 🎨 **Modern UI**: 
+  - Next.js + Tailwind CSS
+  - Responsive design (mobile-friendly)
+  - Loading states and animations
+  - Accessible components (ARIA labels, keyboard navigation)
+  - Clean header/footer layout
+  
+- ⚡ **Performance**: 
+  - Fast PDF parsing with pdfjs-dist
+  - Optimized text extraction
+  - Efficient state management
 
 ## Tech Stack
 
@@ -56,8 +77,12 @@ npm install
 cd ..
 ```
 
-4. (Optional but recommended) Set your Gemini API key:
-   - Create a `.env` file inside `backend/`:
+4. (Optional) Configure environment variables:
+   - Frontend: Create a `.env.local` file in the root directory:
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:5000
+   ```
+   - Backend: Create a `.env` file inside `backend/`:
    ```
    GEMINI_API_KEY=YOUR_API_KEY
    ```

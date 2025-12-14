@@ -1,0 +1,59 @@
+{
+  "header": {
+    "title": "SmartCV",
+    "subtitle": "AI-Powered Resume Analyzer"
+  },
+  "upload": {
+    "dragDrop": "Drag and drop a PDF file here, or click to select",
+    "dropHere": "Drop the PDF file here...",
+    "processing": "Processing PDF... Please wait",
+    "maxSize": "Maximum file size: {size}",
+    "onlyPdf": "Only PDF files are accepted (max {size})",
+    "success": "✓ CV successfully uploaded and analyzing...",
+    "fileRejected": "File Rejected:"
+  },
+  "cvData": {
+    "title": "Extracted CV Data:",
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "skills": "Skills",
+    "experience": "Experience",
+    "education": "Education",
+    "rawText": "Raw Text",
+    "showRawText": "Show Raw Text",
+    "hideRawText": "Hide Raw Text",
+    "notFound": "Not found",
+    "noSkills": "No skills detected"
+  },
+  "analysis": {
+    "analyzing": "AI analysis in progress...",
+    "summary": "AI Summary",
+    "missingSections": "Missing Sections",
+    "suggestions": "Suggestions",
+    "scoring": "CV Scoring",
+    "interviewQuestions": "Interview Questions",
+    "technical": "Technical",
+    "behavioral": "Behavioral",
+    "roleSpecific": "Role Specific"
+  },
+  "error": {
+    "title": "Error:",
+    "uploadFailed": "Failed to upload PDF",
+    "analysisFailed": "AI analysis failed",
+    "invalidFileType": "Invalid file type. Please upload a PDF file.",
+    "fileTooLarge": "File size too large. Maximum size is {size}."
+  },
+  "footer": {
+    "copyright": "© 2025 SmartCV. All rights reserved."
+  },
+  "language": {
+    "en": "English",
+    "tr": "Türkçe"
+  },
+  "common": {
+    "back": "Back to Upload",
+    "uploadNew": "Upload New CV"
+  }
+}
+
