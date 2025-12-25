@@ -15,9 +15,6 @@ const Header = () => {
             <span className="hidden sm:inline"> – </span>
             <span className="block sm:inline text-sm sm:text-base md:text-xl">{t('header.subtitle')}</span>
           </div>
-          <div className="flex-shrink-0">
-            <LanguageSwitcher />
-          </div>
         </div>
       </div>
     </header>

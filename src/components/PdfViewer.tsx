@@ -15,14 +15,11 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ file }) => {
     if (file) {
       const url = URL.createObjectURL(file);
       setFileUrl(url);
-      
-      // Get number of pages from PDF using FileReader
+
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          // Use dynamic import for pdfjs-dist
           const pdfjsLib = await import('pdfjs-dist');
-          // Set worker source - use local worker file from public folder
           if (typeof window !== 'undefined') {
             pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
           }
@@ -32,7 +29,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ file }) => {
           setNumPages(pdf.numPages);
         } catch (error) {
           console.error('Error loading PDF:', error);
-          // Fallback: assume 1 page if we can't determine
           setNumPages(1);
         }
       };
@@ -62,7 +58,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ file }) => {
 
   return (
     <div className="w-full h-full bg-white flex flex-col">
-      {/* Page Navigation */}
       {numPages > 1 && (
         <div className="bg-white border-b px-4 py-2.5 flex items-center justify-between shadow-sm flex-shrink-0 z-10">
           <button
@@ -97,7 +92,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ file }) => {
         </div>
       )}
 
-      {/* PDF Display - Fit to A4 container */}
       <div className="flex-1 overflow-auto bg-gray-100 flex items-center justify-center p-2">
         <iframe
           src={`${fileUrl}#page=${currentPage}&zoom=page-fit`}

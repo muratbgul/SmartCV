@@ -35,7 +35,6 @@ const upload = multer({
 app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
   console.log('Received upload-pdf request.');
   
-  // Handle multer errors
   if (req.fileValidationError) {
     return res.status(400).json({ error: req.fileValidationError });
   }
@@ -45,8 +44,7 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
     return res.status(400).json({ error: 'No PDF file uploaded.' });
   }
 
-  // Additional file size check
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
   if (req.file.size > MAX_FILE_SIZE) {
     return res.status(400).json({ 
       error: 'File too large',
@@ -78,44 +76,106 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
 
     let name = null;
 
-    // 1. En üst kısımlarda, büyük harflerle yazılmış, 2-4 kelimelik isimleri ara (daha agresif regex)
-    const topText = fullText.substring(0, Math.min(fullText.length, 1000)); // İlk 1000 karakterde ara
-    const uppercaseNameRegex = /([A-ZÇĞİÖŞÜ]{2,}(?:\s[A-ZÇĞİÖŞÜ]{2,}){1,3})/;
-    const uppercaseNameMatch = topText.match(uppercaseNameRegex);
-
-    if (uppercaseNameMatch && uppercaseNameMatch[1]) {
-        name = uppercaseNameMatch[1].trim();
-    } else {
-        // 2. Eğer büyük harfli isim bulunamazsa, "Name:", "Ad Soyad:" gibi anahtar kelimelerle ara
-        const contextualNameRegex = /(?:name|ad[ı]?\s?soyad[ı]?|full\sname):?\s*([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s[A-ZÇĞİÖŞÜ][a-zçğıöşü]+){1,3})/;
+    const topText = fullText.substring(0, Math.min(fullText.length, 1500));
+    
+    const cleanedTopText = topText.replace(/[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}/g, '')
+                                   .replace(/\+?\d[\d\s.-]{8,}/g, '');
+    
+    const excludedWords = [
+        'NEAR', 'EAST', 'WEST', 'NORTH', 'SOUTH', 'UNIVERSITY', 'COLLEGE', 'INSTITUTE',
+        'CONTACT', 'SKILLS', 'EDUCATION', 'EXPERIENCE', 'WORK', 'PROJECTS', 'LANGUAGES',
+        'SOFTWARE', 'ENGINEER', 'DEVELOPER', 'ENHANCED', 'ENHANC', 'PROFESSIONAL'
+    ];
+    
+    const allCapsNameRegex = /\b([A-ZÇĞİÖŞÜ]{3,})\s+([A-ZÇĞİÖŞÜ]{3,})\b/g;
+    const allCapsMatches = cleanedTopText.match(allCapsNameRegex);
+    
+    if (allCapsMatches && allCapsMatches.length > 0) {
+        const validAllCapsNames = allCapsMatches.filter(match => {
+            const upperMatch = match.toUpperCase();
+            const words = match.split(/\s+/);
+            
+            if (words.length !== 2) return false;
+            
+            const hasExcludedWord = excludedWords.some(excluded => upperMatch.includes(excluded));
+            const eachWordLongEnough = words.every(w => w.length >= 4);
+            const allUpperCase = words.every(word => word === word.toUpperCase());
+            
+            return !hasExcludedWord && eachWordLongEnough && allUpperCase;
+        });
+        
+        if (validAllCapsNames.length > 0) {
+            name = validAllCapsNames[0].trim();
+        }
+    }
+    
+    if (!name) {
+        const turkishNamePattern = /\b([A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,})\s+([A-ZÇĞİÖŞÜ][a-zçğıöşü]{2,})\b/g;
+        const turkishNameMatches = cleanedTopText.match(turkishNamePattern);
+        
+        if (turkishNameMatches && turkishNameMatches.length > 0) {
+            const validTurkishNames = turkishNameMatches.filter(match => {
+                const words = match.split(/\s+/);
+                if (words.length !== 2) return false;
+                
+                const upperMatch = match.toUpperCase();
+                const hasExcludedWord = excludedWords.some(excluded => upperMatch.includes(excluded));
+                const eachWordLongEnough = words.every(w => w.length >= 3);
+                
+                return !hasExcludedWord && eachWordLongEnough;
+            });
+            
+            if (validTurkishNames.length > 0) {
+                name = validTurkishNames[0].trim();
+            }
+        }
+    }
+    
+    if (!name) {
+        const contextualNameRegex = /(?:name|full\s*name|candidate)\s*:?\s*([A-ZÇĞİÖŞÜ][a-zçğıöşü]+(?:\s+[A-ZÇĞİÖŞÜ][a-zçğıöşü]+){1,3})/i;
         const contextualNameMatch = topText.match(contextualNameRegex);
         if (contextualNameMatch && contextualNameMatch[1]) {
             name = contextualNameMatch[1].trim();
-        } else {
-             // 3. Son çare olarak compromise'dan gelen insan isimlerini dene (iki kelimeden uzun olanları tercih et)
-            const possibleNames = doc.people().out('array');
-            const filteredNames = possibleNames.filter(p => p.split(' ').length >= 2);
-            if (filteredNames.length > 0) {
-                name = filteredNames[0];
-            } else if (possibleNames.length > 0) {
-                name = possibleNames[0]; // Tek kelimelik isimleri de al
-            }
+        }
+    }
+    
+    if (!name) {
+        const possibleNames = doc.people().out('array');
+        const filteredNames = possibleNames.filter(p => {
+            const words = p.split(' ');
+            return words.length >= 2 && words.length <= 4;
+        });
+        if (filteredNames.length > 0) {
+            name = filteredNames[0];
         }
     }
 
     const emails = doc.emails().out('array');
-    
-    // Telefon numarası ayrıştırma (daha sağlam bir yöntemle)
+        
     let phone = null;
+        
     const nlpPhoneNumbers = doc.phoneNumbers().out('array');
     if (nlpPhoneNumbers.length > 0) {
         phone = nlpPhoneNumbers[0];
-    } else {
-        // Daha genel bir telefon numarası regex'i
-        const phoneRegex = /(\+?\d{1,3}[-.\s]?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/g;
-        const phoneMatch = fullText.match(phoneRegex);
-        if (phoneMatch && phoneMatch.length > 0) {
-            phone = phoneMatch[0];
+    }
+        
+    if (!phone) {
+        const phonePatterns = [
+            /\+?\d{1,4}[\s.-]?\(?\d{1,4}\)?[\s.-]?\d{1,4}[\s.-]?\d{1,4}[\s.-]?\d{1,9}/g,
+            /\+?\d{2,3}[\s.-]?\d{3}[\s.-]?\d{3}[\s.-]?\d{2,4}[\s.-]?\d{2}/g,
+            /\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g,
+            /\d{10,}/g
+        ];
+            
+        for (const pattern of phonePatterns) {
+            const matches = fullText.match(pattern);
+            if (matches && matches.length > 0) {
+                const validPhone = matches.find(m => m.replace(/\D/g, '').length >= 10);
+                if (validPhone) {
+                    phone = validPhone.trim();
+                    break;
+                }
+            }
         }
     }
 
@@ -137,15 +197,13 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
       new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(fullText)
     );
 
-    // Yeni deneyim ve eğitim ayrıştırma mantığı (satır satır işleme)
     let experience = null;
     let education = null;
 
     const lines = fullText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     const parsedSections = {};
-    let currentSectionKey = null; // Mevcut bölümün anahtarını tutar
+    let currentSectionKey = null;
 
-    // Tüm ana bölüm başlıklarını ve bunların kanonik anahtarlarını tanımlayalım
     const sectionHeadersMap = {
         'CONTACT': 'CONTACT', 'İLETİŞİM': 'CONTACT',
         'SKILLS': 'SKILLS', 'BECERİLER': 'SKILLS',
@@ -159,14 +217,12 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
         'INTERESTS': 'INTERESTS', 'HOBİLER': 'INTERESTS'
     };
 
-    // Tüm başlıkları kapsayan regex deseni oluştur
     const headerPattern = Object.keys(sectionHeadersMap).map(h => h.replace(/ /g, '\\s*')).join('|');
     const headerRegex = new RegExp(`^(${headerPattern})$`, 'i');
 
     for (const line of lines) {
         const match = line.match(headerRegex);
         if (match) {
-            // Yeni bir bölüm başlığı bulundu
             const matchedHeaderOriginalKey = Object.keys(sectionHeadersMap).find(key =>
                 new RegExp(`^${key.replace(/ /g, '\\s*')}$`, 'i').test(match[1])
             );
@@ -174,40 +230,31 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
             if (matchedHeaderOriginalKey) {
                 currentSectionKey = sectionHeadersMap[matchedHeaderOriginalKey];
                 if (!parsedSections[currentSectionKey]) {
-                    // Deneyim ve eğitim için girişleri bir dizi olarak sakla
                     if (currentSectionKey === 'EXPERIENCE' || currentSectionKey === 'EDUCATION') {
                         parsedSections[currentSectionKey] = [];
                     } else {
-                        parsedSections[currentSectionKey] = ''; // Diğer bölümler için string olarak sakla
+                        parsedSections[currentSectionKey] = '';
                     }
                 }
             } else {
-                currentSectionKey = null; // Geçersiz başlık, sıfırla
+                currentSectionKey = null;
             }
         } else if (currentSectionKey) {
-            // Bölüm içindeki bir satır
             if (currentSectionKey === 'EXPERIENCE' || currentSectionKey === 'EDUCATION') {
-                // Yeni bir deneyim/eğitim girişi için sezgisel yaklaşım:
-                // Satır, bir tarih deseniyle (örn. "Jul. 2024 - Aug. 2024") başlıyorsa
-                // veya büyük harfle başlayan ve başlık gibi görünen bir kelimeyle başlıyorsa yeni bir giriş olarak kabul et.
                 const isNewEntry = /^(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|Ocak|Şubat|Mart|Nisan|Mayıs|Haziran|Temmuz|Ağustos|Eylül|Ekim|Kasım|Aralık|\d{4})/.test(line) ||
-                                 /^[A-ZÇĞİÖŞÜ][a-zçğıöşü0-9.,\s&-]+$/.test(line); // Büyük harfle başlıyor ve başlık gibi duruyor
+                                 /^[A-ZÇĞİÖŞÜ][a-zçğıöşü0-9.,\s&-]+$/.test(line);
 
                 if (parsedSections[currentSectionKey].length === 0 || isNewEntry) {
-                    // Yeni bir giriş başlat
                     parsedSections[currentSectionKey].push(line);
                 } else {
-                    // Son girişe ekle (açıklama vb. devamı olduğunu varsayarak)
                     parsedSections[currentSectionKey][parsedSections[currentSectionKey].length - 1] += '\n' + line;
                 }
             } else {
-                // Diğer bölümler için satırı string'e ekle
                 parsedSections[currentSectionKey] += line + '\n';
             }
         }
     }
 
-    // Ayrıştırılmış bölümlerden deneyim ve eğitimi al
     if (parsedSections.EXPERIENCE && parsedSections.EXPERIENCE.length > 0) {
         experience = parsedSections.EXPERIENCE.join('\n').trim();
     }
@@ -231,7 +278,6 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
     console.error('Error parsing PDF in backend (pdfjs-dist):', error);
     const errorMessage = error.message || 'An unknown error occurred while parsing the PDF';
     
-    // More specific error messages
     let statusCode = 500;
     if (errorMessage.includes('Invalid PDF') || errorMessage.includes('corrupted')) {
       statusCode = 400;
@@ -243,7 +289,6 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
     });
   }
 }, (error, req, res, next) => {
-  // Multer error handler
   if (error instanceof multer.MulterError) {
     if (error.code === 'LIMIT_FILE_SIZE') {
       return res.status(400).json({ 
@@ -265,12 +310,8 @@ app.post('/upload-pdf', upload.single('pdf'), async (req, res) => {
   next();
 });
 
-/**
- * Build a concise prompt for Gemini with extracted CV data and raw text.
- */
 const buildPrompt = (parsedData) => {
   const { name, email, phone, skills, experience, education, rawText } = parsedData;
-  // Limit text length to avoid token limits
   const limitedText = rawText.substring(0, 8000);
   const limitedExperience = experience ? experience.substring(0, 2000) : 'Not found';
   const limitedEducation = education ? education.substring(0, 1000) : 'Not found';
@@ -315,9 +356,6 @@ CV Content:
 ${limitedText}`;
 };
 
-/**
- * Fallback mock response when GEMINI_API_KEY is not provided.
- */
 const mockAnalysis = () => ({
   summary: 'Basic check: PDF successfully read, returning sample analysis.',
   missingSections: ['Projects', 'Certifications'],
@@ -368,13 +406,11 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 console.log('🔑 GEMINI_API_KEY check:', GEMINI_API_KEY ? `✅ Found (${GEMINI_API_KEY.substring(0, 10)}...)` : '❌ Not found');
 const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
 
-// Test endpoint to list available models
 app.get('/test-models', async (req, res) => {
   if (!genAI) {
     return res.json({ error: 'GEMINI_API_KEY not set' });
   }
   try {
-    // Try to list models (if API supports it)
     const model = genAI.getGenerativeModel();
     return res.json({ 
       message: 'API initialized successfully',
@@ -395,7 +431,6 @@ app.post('/analyze-cv', async (req, res) => {
       return res.status(400).json({ error: 'parsedData with rawText is required' });
     }
 
-    // If no API key, return mock analysis so the UI can still function.
     if (!genAI) {
       console.warn('⚠️ GEMINI_API_KEY not set. Returning mock analysis.');
       console.warn('To use real AI analysis, set GEMINI_API_KEY in .env file');
@@ -404,9 +439,7 @@ app.post('/analyze-cv', async (req, res) => {
 
     console.log('✅ Gemini API initialized, attempting to analyze CV...');
 
-    // Try multiple model names, fallback to mock if all fail
-    // Updated model names - gemini-pro is deprecated, use gemini-1.5 models
-    const modelNames = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+    const modelNames = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro'];
     let text = null;
     let lastError = null;
     
@@ -420,7 +453,7 @@ app.post('/analyze-cv', async (req, res) => {
         text = result.response.text();
         console.log(`✅ Successfully used model: ${modelName}`);
         console.log('📊 Gemini response length:', text.length, 'characters');
-        break; // Success, exit loop
+        break;
       } catch (err) {
         lastError = err;
         console.warn(`❌ Model ${modelName} failed:`, err.message);
@@ -437,23 +470,7 @@ app.post('/analyze-cv', async (req, res) => {
       }
     }
     
-    // If all named models failed, try default model (no name specified)
-    if (!text) {
-      try {
-        console.log('🔄 Trying default model (no name specified)...');
-        const defaultModel = genAI.getGenerativeModel();
-        const prompt = buildPrompt(parsedData);
-        const result = await defaultModel.generateContent(prompt);
-        text = result.response.text();
-        console.log(`✅ Successfully used default model`);
-        console.log('📊 Gemini response length:', text.length, 'characters');
-      } catch (err) {
-        console.warn('❌ Default model also failed:', err.message);
-        lastError = err;
-      }
-    }
     
-    // If all models failed, return mock analysis
     if (!text) {
       console.error('❌ All Gemini models failed, using mock analysis.');
       console.error('Last error message:', lastError?.message);
@@ -486,7 +503,6 @@ app.post('/analyze-cv', async (req, res) => {
     }
   } catch (error) {
     console.error('Error during AI analysis:', error);
-    // Return mock instead of error, so UI still works
     return res.json({ analysis: mockAnalysis(), source: 'error-fallback' });
   }
 });

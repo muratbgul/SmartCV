@@ -1,12 +1,9 @@
-// API Configuration
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-// File Upload Configuration
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_FILE_SIZE = 10 * 1024 * 1024;
 export const ACCEPTED_FILE_TYPES = ['application/pdf'];
 export const ACCEPTED_FILE_EXTENSIONS = ['.pdf'];
 
-// Skills Keywords for extraction
 export const SKILLS_KEYWORDS = [
   'HTML', 'HTML5', 'CSS', 'CSS3', 'JavaScript', 'TypeScript', 'React', 'React.js',
   'Node.js', 'Python', 'Angular', 'Next.js', 'Tailwind', 'Bootstrap', 'Vue.js',
@@ -21,4 +18,8 @@ export const SKILLS_KEYWORDS = [
   'CI/CD', 'Jenkins', 'Travis CI', 'CircleCI', 'GitLab CI', 'Microservices',
   'Serverless', 'Lambda', 'S3', 'EC2', 'RDS', 'DynamoDB', 'Redis', 'Elasticsearch'
 ];
+
+
+
+
 

@@ -29,7 +29,6 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const [translations, setTranslations] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    // Load translations
     const loadTranslations = async () => {
       try {
         const translations = await import(`@/src/lib/locales/${language}.json`);
@@ -42,7 +41,6 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   }, [language]);
 
   useEffect(() => {
-    // Load saved language from localStorage
     const savedLanguage = localStorage.getItem('language') as Language;
     if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'tr')) {
       setLanguageState(savedLanguage);
@@ -62,7 +60,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       if (value && typeof value === 'object') {
         value = value[k];
       } else {
-        return key; // Return key if translation not found
+        return key;
       }
     }
 
@@ -70,7 +68,6 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       return key;
     }
 
-    // Replace parameters
     if (params) {
       return value.replace(/\{(\w+)\}/g, (match, paramKey) => {
         return params[paramKey] || match;
@@ -86,4 +83,8 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     </LanguageContext.Provider>
   );
 };
+
+
+
+
 
